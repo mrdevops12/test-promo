@@ -6,41 +6,41 @@ resource "helm_release" "demo_prometheus_stack" {
   repository       = "https://prometheus-community.github.io/helm-charts"
   version          = "56.6.2"
 
-  skip_crds = true  # ✅ Prevent CRD conflict
+  skip_crds = true
 
-  # ✅ Prevent cluster-wide RBAC & CR creation conflict
+  # ── Disable all built-in CRD install hooks ──
+  set {
+    name  = "crds.enabled"
+    value = "false"
+  }
+  set {
+    name  = "prometheusOperator.crdInstall"
+    value = "false"
+  }
+
+  # ── Skip cluster-wide RBAC & shared CRs ──
   set {
     name  = "global.rbac.create"
     value = "false"
   }
-
   set {
     name  = "prometheusOperator.createCustomResource"
     value = "false"
   }
 
-  # ✅ Enable access for Prometheus and Grafana
+  # ── Enable access ──
   set {
     name  = "prometheus.service.type"
     value = "LoadBalancer"
   }
-
   set {
     name  = "grafana.enabled"
     value = "true"
   }
-
   set {
     name  = "grafana.service.type"
     value = "LoadBalancer"
   }
 
-  # Optional: Prometheus config
-  set {
-    name  = "prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues"
-    value = "false"
-  }
-
-  # Optional: extend install time
   timeout = 600
 }
