@@ -1,42 +1,14 @@
-kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/crds/
+# Show the release status (should be FAILED or PENDING)
+helm status demo-prometheus -n demo-monitoring
+
+# Show exactly which hooks ran (and which are still pending)
+helm get hooks demo-prometheus -n demo-monitoring
 
 
-resource "helm_release" "demo_prometheus_stack" {
-  name             = "demo-prometheus"
-  namespace        = "demo-monitoring"
-  create_namespace = true
+kubectl get events -n demo-monitoring --sort-by=.metadata.creationTimestamp
 
-  chart      = "kube-prometheus-stack"
-  repository = "https://prometheus-community.github.io/helm-charts"
-  version    = "56.6.2"
+kubectl describe job <hook–job-name> -n demo-monitoring
+kubectl logs job/<hook–job-name> -n demo-monitoring
 
-  # ◼️ We already applied CRDs manually
-  skip_crds = true
+kubectl get clusterrole kube-prometheus-stack-grafana-clusterrole -o yaml
 
-  # ◼️ Avoid conflicting with the existing Prometheus stack’s RBAC
-  set {
-    name  = "global.rbac.create"
-    value = "false"
-  }
-  set {
-    name  = "prometheusOperator.createCustomResource"
-    value = "false"
-  }
-
-  # ◼️ Expose UIs
-  set {
-    name  = "prometheus.service.type"
-    value = "LoadBalancer"
-  }
-  set {
-    name  = "grafana.enabled"
-    value = "true"
-  }
-  set {
-    name  = "grafana.service.type"
-    value = "LoadBalancer"
-  }
-
-  # Give AWS LB plenty of time
-  timeout = 600
-}
