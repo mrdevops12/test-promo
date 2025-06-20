@@ -8,22 +8,17 @@ resource "null_resource" "install_prom_crds" {
     command     = <<-EOT
       set -e
 
-      # 1) Ensure the Prometheus Community repo is added
-      if ! helm repo list | grep -q '^prometheus-community'; then
-        helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-      fi
+      # Ensure repo is added
+      helm repo add prometheus-community https://prometheus-community.github.io/helm-charts \
+        || echo "repo already exists"
       helm repo update
 
-      # 2) Pull & unpack the exact chart version
-      helm pull prometheus-community/kube-prometheus-stack \
+      # Render only the CRDs from the chart, then apply them directly
+      helm template crds prometheus-community/kube-prometheus-stack \
         --version ${self.triggers.chart_version} \
-        --untar --untardir ./crd_tmp
+        --repo https://prometheus-community.github.io/helm-charts \
+        --show-only crds | kubectl apply -f -
 
-      # 3) Apply its CRDs
-      kubectl apply -f ./crd_tmp/kube-prometheus-stack/crds/
-
-      # 4) Clean up
-      rm -rf ./crd_tmp
     EOT
   }
 }
