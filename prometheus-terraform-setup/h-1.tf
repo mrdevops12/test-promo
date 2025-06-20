@@ -1,21 +1,18 @@
 resource "helm_release" "demo_prometheus_stack" {
+  depends_on      = [null_resource.vendor_prom_chart]
   name             = "demo-prometheus"
   namespace        = "demo-monitoring"
   create_namespace = true
 
-  # make sure CRDs are already in place before Helm runs
-  depends_on = [
-    null_resource.install_prom_crds
-  ]
+  # point at your local copy of the chart
+  chart            = "${path.module}/chart_dir/kube-prometheus-stack"
+  # you can omit repository when using local chart
+  version          = "56.6.2"
 
-  chart      = "kube-prometheus-stack"
-  repository = "https://prometheus-community.github.io/helm-charts"
-  version    = "56.6.2"
+  # tell Terraform’s Helm provider not to render any CRDs
+  skip_crds        = true
 
-  # skip CRD creation (we just installed them)
-  skip_crds = true
-
-  # avoid colliding with the existing Prometheus stack’s RBAC
+  # avoid re-creating any cluster-wide RBAC
   set {
     name  = "global.rbac.create"
     value = "false"
@@ -39,6 +36,6 @@ resource "helm_release" "demo_prometheus_stack" {
     value = "LoadBalancer"
   }
 
-  # give AWS LoadBalancers enough time
+  # give AWS time to provision LBs
   timeout = 600
 }
