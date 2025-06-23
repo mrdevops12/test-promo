@@ -12,3 +12,30 @@ kubectl logs job/<hook–job-name> -n demo-monitoring
 
 kubectl get clusterrole kube-prometheus-stack-grafana-clusterrole -o yaml
 
+
+
+# 1. List all Helm releases (to show the existing Prometheus release)
+helm list --all-namespaces
+
+# 2. Show Prometheus‐related CRDs (cluster-scoped)
+kubectl get crd | grep -E 'prometheus|servicemonitors|podmonitors|prometheusrules'
+
+# 3. List all ClusterRoles (to show the operator/​grafana roles)
+kubectl get clusterrole
+
+# 4. List all ClusterRoleBindings
+kubectl get clusterrolebinding
+
+# 5. (Optional) Describe a specific conflicting ClusterRole
+kubectl describe clusterrole kube-prometheus-stack-grafana-clusterrole
+
+# 6. List all Roles in every namespace
+kubectl get role --all-namespaces
+
+# 7. List all RoleBindings in every namespace
+kubectl get rolebinding --all-namespaces
+
+# 8. Inspect recent events (to catch any “already exists” errors)
+kubectl get events --all-namespaces --sort-by=.metadata.creationTimestamp
+
+
