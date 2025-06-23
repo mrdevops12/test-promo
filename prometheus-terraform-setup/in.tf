@@ -28,7 +28,7 @@ variable "aws_region" {
 variable "cluster_name" {
   description = "Name of your EKS cluster"
   type        = string
-  default     = "my-eks-cluster"  # ← change this!
+  default     = "my-eks-cluster"  # ← change me!
 }
 
 variable "chart_version" {
@@ -45,12 +45,10 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Grab the cluster endpoint & CA
 data "aws_eks_cluster" "cluster" {
   name = var.cluster_name
 }
 
-# Grab the auth token
 data "aws_eks_cluster_auth" "cluster" {
   name = var.cluster_name
 }
@@ -66,7 +64,7 @@ provider "kubernetes" {
 }
 
 # ──────────────────────────────
-# CREATE demo-monitoring NAMESPACE
+# CREATE NAMESPACE
 # ──────────────────────────────
 
 resource "kubernetes_namespace" "demo_monitoring" {
@@ -76,11 +74,10 @@ resource "kubernetes_namespace" "demo_monitoring" {
 }
 
 # ──────────────────────────────
-# HELM TEMPLATE → APPLY via null_resource
+# RENDER & APPLY Helm → kubectl
 # ──────────────────────────────
 
 resource "null_resource" "install_prometheus_via_template" {
-  # retrigger on chart version or namespace name change
   triggers = {
     version   = var.chart_version
     namespace = kubernetes_namespace.demo_monitoring.metadata[0].name
@@ -93,11 +90,11 @@ resource "null_resource" "install_prometheus_via_template" {
     command     = <<-EOT
       set -e
 
-      # 1) add/update the Prometheus Helm repo
+      # 1) Add/update Prometheus Community repo
       helm repo add prometheus-community https://prometheus-community.github.io/helm-charts || true
       helm repo update
 
-      # 2) render only namespaced resources (skip CRDs, cluster-RBAC, hooks)
+      # 2) Render only the namespaced resources (skip CRDs, cluster-RBAC, hooks)
       helm template demo-prometheus prometheus-community/kube-prometheus-stack \
         --version ${self.triggers.version} \
         --namespace ${self.triggers.namespace} \
@@ -109,16 +106,17 @@ resource "null_resource" "install_prometheus_via_template" {
         --set grafana.service.type=LoadBalancer \
       > /tmp/demo-prometheus.yaml
 
-      # 3) apply them
+      # 3) Apply it
       kubectl apply -f /tmp/demo-prometheus.yaml
 
-      # 4) wait for the core workloads
-      kubectl rollout status statefulset/prometheus-kube-prometheus-stack-prometheus \
-        -n ${self.triggers.namespace} --timeout=10m
-      kubectl rollout status deployment/kube-prometheus-stack-grafana \
+      # 4) Wait for Prometheus (by label) & Grafana (by label)
+      kubectl rollout status statefulset -l app.kubernetes.io/name=prometheus \
         -n ${self.triggers.namespace} --timeout=10m
 
-      echo "✅ Prometheus + Grafana are now running in namespace ${self.triggers.namespace}"
+      kubectl rollout status deployment -l app.kubernetes.io/name=grafana \
+        -n ${self.triggers.namespace} --timeout=10m
+
+      echo "✅ Prometheus + Grafana are running in namespace ${self.triggers.namespace}"
     EOT
   }
 }
