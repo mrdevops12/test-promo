@@ -1,5 +1,4 @@
 resource "null_resource" "vendor_prom_chart" {
-  # ← bump this to upgrade chart version
   triggers = {
     version = "69.3.0"
   }
@@ -9,25 +8,25 @@ resource "null_resource" "vendor_prom_chart" {
     command     = <<-EOT
       set -e
 
-      # 1) Clean up any old vendored chart
-      rm -rf ./charts
+      # 1) Cleanup any old vendored chart
+      rm -rf charts
 
-      # 2) Ensure the upstream repo is known
+      # 2) Ensure the repo
       helm repo add prometheus-community https://prometheus-community.github.io/helm-charts || true
       helm repo update
 
-      # 3) Pull & unpack that exact version
+      # 3) Pull & unpack the exact chart version
       mkdir -p charts
       helm pull prometheus-community/kube-prometheus-stack \
         --version ${self.triggers.version} \
         --untar --untardir charts
 
-      # 4) Strip out every CRDs folder (root + subcharts)
+      # 4) Remove every CRDs folder (root + subcharts)
       find charts/kube-prometheus-stack -type d -name crds -prune -exec rm -rf {} +
 
-      # 5) Also remove any standalone CRD templates or hooks
-      grep -Rl "helm.sh/hook:.*crd-install" charts/kube-prometheus-stack \
-        | xargs -r rm -f
+      # 5) Patch out the 'crds:' section in Chart.yaml so Helm won't error
+      sed -i '/^crds:/d' charts/kube-prometheus-stack/Chart.yaml
+      sed -i '/^  - crds\\//d' charts/kube-prometheus-stack/Chart.yaml
     EOT
   }
 }
