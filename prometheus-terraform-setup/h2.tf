@@ -1,17 +1,18 @@
 resource "helm_release" "demo_prometheus_stack" {
-  depends_on      = [ null_resource.vendor_prom_chart ]
   name             = "demo-prometheus"
   namespace        = "demo-monitoring"
   create_namespace = true
 
-  # Install from your local, patched chart
-  chart   = "${path.module}/charts/kube-prometheus-stack"
-  version = "69.3.0"
+  repository = "https://prometheus-community.github.io/helm-charts"
+  chart      = "kube-prometheus-stack"
+  version    = "69.3.0"
 
-  # skip_crds is now harmless (no CRDs remain)
-  skip_crds = true
+  # 1) Never render or install any CRDs
+  skip_crds     = true
+  # 2) Never run any hooks (CRDs or otherwise)
+  disable_hooks = true
 
-  # disable cluster-wide RBAC/CR creation
+  # 3) Disable the chart’s cluster-wide RBAC pieces
   set {
     name  = "global.rbac.create"
     value = "false"
@@ -21,7 +22,7 @@ resource "helm_release" "demo_prometheus_stack" {
     value = "false"
   }
 
-  # expose Prometheus & Grafana externally
+  # 4) Expose services externally
   set {
     name  = "prometheus.service.type"
     value = "LoadBalancer"
@@ -35,6 +36,8 @@ resource "helm_release" "demo_prometheus_stack" {
     value = "LoadBalancer"
   }
 
-  # give AWS time to provision ELBs
+  # 5) Give AWS time to provision ELBs
   timeout = 600
+  # (optional) Roll back on failure
+  atomic  = true
 }
