@@ -4,14 +4,14 @@ resource "helm_release" "demo_prometheus_stack" {
   namespace        = "demo-monitoring"
   create_namespace = true
 
-  # Use your vendored + patched chart
+  # Install from your locally patched copy
   chart   = "${path.module}/charts/kube-prometheus-stack"
   version = "69.3.0"
 
-  # harmless now, since no CRDs remain
+  # no CRDs here
   skip_crds = true
 
-  # disable all cluster-wide RBAC (no ClusterRoles/Bindings)
+  # disable cluster-wide RBAC/CR creation
   set {
     name  = "global.rbac.create"
     value = "false"
@@ -21,7 +21,7 @@ resource "helm_release" "demo_prometheus_stack" {
     value = "false"
   }
 
-  # expose Prometheus & Grafana via LoadBalancer
+  # expose UIs externally
   set {
     name  = "prometheus.service.type"
     value = "LoadBalancer"
@@ -35,6 +35,5 @@ resource "helm_release" "demo_prometheus_stack" {
     value = "LoadBalancer"
   }
 
-  # give AWS time to provision ELBs
   timeout = 600
 }
