@@ -1,5 +1,5 @@
-resource "null_resource" "vendor_prom_chart" {
-  # bump this whenever you update chart version
+resource "null_resource" "install_prom_crds" {
+  # Change this to bump chart version in the future
   triggers = {
     chart_version = "56.6.2"
   }
@@ -8,17 +8,17 @@ resource "null_resource" "vendor_prom_chart" {
     interpreter = ["bash", "-c"]
     command     = <<-EOT
       set -e
-      mkdir -p chart_dir
-      # pull & unpack into chart_dir
+
+      # 1) Add & update Prometheus community repo
       helm repo add prometheus-community https://prometheus-community.github.io/helm-charts \
         || echo "repo already exists"
       helm repo update
-      helm pull prometheus-community/kube-prometheus-stack \
-        --version ${self.triggers.chart_version} \
-        --untar --untardir chart_dir
 
-      # remove the built-in CRDs so Helm can’t try to install them
-      rm -rf chart_dir/kube-prometheus-stack/crds
+      # 2) Render only the CRDs from the chart and apply them
+      helm template prometheus-crds prometheus-community/kube-prometheus-stack \
+        --version ${self.triggers.chart_version} \
+        --show-only crds \
+      | kubectl apply -f -
     EOT
   }
 }
