@@ -28,3 +28,20 @@ nodeGroups:
     securityGroups:
       attachIDs:
         - "sg-0123456789abcdef0"  #  replace with your real SG ID
+
+
+
+# Remove old one if it exists
+sudo rm -f /usr/local/bin/aws-iam-authenticator
+
+# Download the correct version (x86_64 / amd64)
+curl -o aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/1.30.0/2024-05-09/bin/linux/amd64/aws-iam-authenticator
+
+# Make it executable
+chmod +x aws-iam-authenticator
+
+# Move it to your PATH
+sudo mv aws-iam-authenticator /usr/local/bin/
+
+# Verify
+aws-iam-authenticator version
