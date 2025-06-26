@@ -1,0 +1,30 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: test-kube
+  region: us-east-1
+  version: "1.30"
+
+vpc:
+  id: "vpc-05caa828685e9a611"
+  subnets:
+    private:
+      private-1: { id: "subnet-05cfbfc5a95afa918" }
+      private-2: { id: "subnet-05867714d0bfb6ad9" }
+      private-3: { id: "subnet-0edfec5db9f78d863" }
+
+  clusterEndpoints:
+    publicAccess: true
+    privateAccess: false
+
+nodeGroups:
+  - name: ng-1
+    instanceType: t3a.small
+    desiredCapacity: 3
+    minSize: 1
+    maxSize: 6
+    privateNetworking: true
+    securityGroups:
+      attachIDs:
+        - "sg-0123456789abcdef0"  #  replace with your real SG ID
