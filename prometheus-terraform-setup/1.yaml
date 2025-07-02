@@ -61,6 +61,12 @@ kubectl describe deployment aws-load-balancer-controller -n kube-system
 kubectl delete ingress monitoring-ingress -n demo-monitoring
 terraform apply
 kubectl get ingress -n demo-monitoring -w
+kubectl exec -n demo-monitoring -it kube-prometheus-stack-grafana-5fdbb947c5-2t1fq -- sh
+curl -I http://internal-k8s-monitoring-d6f85e32b5-1621674925.us-east-1.elb.amazonaws.com/grafana
+
+kubectl exec -n demo-monitoring -it kube-prometheus-stack-prometheus-0 -- sh
+curl -I http://internal-k8s-monitoring-d6f85e32b5-1621674925.us-east-1.elb.amazonaws.com/prometheus
+
 
 
 
