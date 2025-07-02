@@ -42,4 +42,13 @@ kubectl get crd | grep monitoring.coreos.com | awk '{print $1}' | xargs kubectl 
 name = "AWSLoadBalancerControllerIAMPolicy-${var.eks_cluster_name}"
 
 
+kubectl get pods -n kube-system | grep alb
+kubectl logs -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller
+kubectl get sa aws-load-balancer-controller -n kube-system -o yaml
+kubectl delete ingress monitoring-ingress -n demo-monitoring
+terraform apply
+kubectl get ingress -n demo-monitoring -w
+
+
+
 
