@@ -45,6 +45,9 @@ name = "AWSLoadBalancerControllerIAMPolicy-${var.eks_cluster_name}"
 kubectl get pods -n kube-system | grep alb
 kubectl logs -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller
 kubectl get sa aws-load-balancer-controller -n kube-system -o yaml
+kubectl get pods -n kube-system | grep alb
+terraform apply -target=helm_release.alb_controller
+
 kubectl delete ingress monitoring-ingress -n demo-monitoring
 terraform apply
 kubectl get ingress -n demo-monitoring -w
