@@ -1,3 +1,9 @@
+AWS_ACCESS_KEY_ID	
+AWS_SECRET_ACCESS_KEY	
+EKS_CLUSTER_NAME	
+AWS_REGION
+
+
 name: Deploy EKS Monitoring Stack
 
 on:
