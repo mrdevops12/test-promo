@@ -1,13 +1,7 @@
-AWS_ACCESS_KEY_ID	
-AWS_SECRET_ACCESS_KEY	
-EKS_CLUSTER_NAME	
-AWS_REGION
-
-
 name: Deploy EKS Monitoring Stack
 
 on:
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch:
   push:
     branches: [main]
 
@@ -22,27 +16,27 @@ jobs:
       AWS_REGION: ${{ secrets.AWS_REGION }}
 
     steps:
-      - name:  Checkout repository
+      - name: 📦 Checkout repository
         uses: actions/checkout@v3
 
-      - name:  Set up Terraform
+      - name: 🔧 Set up Terraform
         uses: hashicorp/setup-terraform@v2
 
-      - name:  Configure AWS credentials
+      - name: 🔐 Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name:  Terraform Init
-        run: terraform -chdir=infra init
+      - name: ⚙️ Terraform Init
+        run: terraform init
 
-      - name:  Terraform Validate
-        run: terraform -chdir=infra validate
+      - name: 🔎 Terraform Validate
+        run: terraform validate
 
-      - name: Terraform Plan
-        run: terraform -chdir=infra plan -out=plan.out
+      - name: 🧪 Terraform Plan
+        run: terraform plan -out=plan.out
 
-      - name:  Terraform Apply
-        run: terraform -chdir=infra apply -auto-approve plan.out
+      - name: 🚀 Terraform Apply
+        run: terraform apply -auto-approve plan.out
