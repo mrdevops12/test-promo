@@ -68,6 +68,15 @@ kubectl exec -n demo-monitoring -it kube-prometheus-stack-prometheus-0 -- sh
 curl -I http://internal-k8s-monitoring-d6f85e32b5-1621674925.us-east-1.elb.amazonaws.com/prometheus
 
 
+I am  getting an error because GitHub Actions isn’t trusted by your EKS cluster yet. To fix it:
+	Either add GitHub’s IAM identity to EKS manually
+Or set up a secure connection using OIDC, which is better for long term
+
+When you run Terraform from your EC2 machine, everything works fine. But when you run it from GitHub Actions, it gives an error:
+"Unauthorized" — means Terraform is not allowed to talk to your EKS cluster.
+
+
+
 
 
 
