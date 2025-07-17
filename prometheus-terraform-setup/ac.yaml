@@ -11,7 +11,7 @@ permissions:
 jobs:
   terraform:
     name: Terraform Apply for Monitoring
-    runs-on: [self-hosted, arc-rs-nonprod]
+    runs-on: arc-rs-nonprod
 
     env:
       TF_VAR_eks_cluster_name: ${{ secrets.EKS_CLUSTER_NAME }}
