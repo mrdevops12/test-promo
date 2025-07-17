@@ -16,7 +16,7 @@ jobs:
       AWS_REGION: ${{ secrets.AWS_REGION }}
 
     steps:
-      - name:  Checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name:  Set up Terraform
@@ -28,6 +28,9 @@ jobs:
           role-to-assume: arn:aws:iam::202523371796:role/gh-eks-deploy
           role-session-name: github-monitoring-ci
           aws-region: ${{ secrets.AWS_REGION }}
+
+      - name:  Check AWS Identity
+        run: aws sts get-caller-identity
 
       - name:  Terraform Init
         run: terraform init
