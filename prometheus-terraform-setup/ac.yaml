@@ -27,8 +27,14 @@ jobs:
       - name:  Set up Terraform
         uses: hashicorp/setup-terraform@v2
 
+      - name:  Check AWS CLI Version
+        run: aws --version
+
       - name:  Verify AWS Identity
         run: aws sts get-caller-identity
+
+      - name:  Test EKS Token Retrieval
+        run: aws eks get-token --cluster-name ${{ secrets.EKS_CLUSTER_NAME }}
 
       - name:  Terraform Init
         run: terraform init
