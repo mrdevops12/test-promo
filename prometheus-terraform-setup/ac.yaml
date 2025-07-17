@@ -24,7 +24,7 @@ jobs:
       - name:  Checkout Repository
         uses: actions/checkout@v3
 
-      - name:  Set up Terraform
+      - name:  Set Up Terraform
         uses: hashicorp/setup-terraform@v2
 
       - name:  Check AWS CLI Version
@@ -35,6 +35,11 @@ jobs:
 
       - name:  Test EKS Token Retrieval
         run: aws eks get-token --cluster-name ${{ secrets.EKS_CLUSTER_NAME }}
+
+      - name:  Validate Kubernetes API Access
+        run: |
+          aws eks update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }}
+          kubectl get ns
 
       - name:  Terraform Init
         run: terraform init
