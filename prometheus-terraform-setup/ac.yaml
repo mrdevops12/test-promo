@@ -44,24 +44,27 @@ jobs:
 
       - name: ⏳ Wait for AWS Load Balancer Webhook to Be Ready
         run: |
-          echo "Waiting for webhook service endpoints..."
+          echo "Waiting for webhook service to be created and ready..."
           for i in {1..30}; do
-            ENDPOINTS=$(kubectl get endpoints aws-load-balancer-webhook-service -n kube-system -o json | jq '.subsets | length')
-            if [ "$ENDPOINTS" -gt 0 ]; then
-              echo "✅ Webhook service is ready."
-              break
+            EXISTS=$(kubectl get svc aws-load-balancer-webhook-service -n kube-system --ignore-not-found)
+            if [ -n "$EXISTS" ]; then
+              ENDPOINTS=$(kubectl get endpoints aws-load-balancer-webhook-service -n kube-system -o json | jq '.subsets | length')
+              if [ "$ENDPOINTS" -gt 0 ] 2>/dev/null; then
+                echo "✅ Webhook service is ready."
+                break
+              fi
             fi
             echo "⏳ Still waiting... ($i/30)"
             sleep 10
           done
 
-          if [ "$ENDPOINTS" -eq 0 ]; then
+          if [ -z "$ENDPOINTS" ] || [ "$ENDPOINTS" -eq 0 ] 2>/dev/null; then
             echo "❌ Webhook service is not ready after 5 minutes."
             exit 1
           fi
 
-      - name: ⚙️ Terraform Init
-        run: terraform init
+      - name: 🧹 Terraform Format
+        run: terraform fmt -check
 
       - name: ✅ Terraform Validate
         run: terraform validate
@@ -71,3 +74,6 @@ jobs:
 
       - name: 🚀 Terraform Apply
         run: terraform apply -auto-approve plan.out
+
+      - name: 📦 Confirm Helm Release
+        run: helm list -n kube-system | grep alb-controller-ci
