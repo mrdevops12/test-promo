@@ -22,34 +22,52 @@ jobs:
       AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
 
     steps:
-      - name:  Checkout Repository
+      - name: 📦 Checkout Repository
         uses: actions/checkout@v3
 
-      - name:  Set Up Terraform
+      - name: 🔧 Set Up Terraform
         uses: hashicorp/setup-terraform@v2
 
-      - name:  Check AWS CLI Version
+      - name: 🛠️ Check AWS CLI Version
         run: aws --version
 
-      - name:  Verify AWS Identity
+      - name: 🔍 Verify AWS Identity
         run: aws sts get-caller-identity
 
-      - name:  Test EKS Token Retrieval
+      - name: 🔑 Test EKS Token Retrieval
         run: aws eks get-token --cluster-name ${{ secrets.EKS_CLUSTER_NAME }}
 
-      - name:  Validate Kubernetes API Access
+      - name: 🌐 Validate Kubernetes API Access
         run: |
           aws eks update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }}
           kubectl get ns
 
-      - name:  Terraform Init
+      - name: ⏳ Wait for AWS Load Balancer Webhook to Be Ready
+        run: |
+          echo "Waiting for webhook service endpoints..."
+          for i in {1..30}; do
+            ENDPOINTS=$(kubectl get endpoints aws-load-balancer-webhook-service -n kube-system -o json | jq '.subsets | length')
+            if [ "$ENDPOINTS" -gt 0 ]; then
+              echo "✅ Webhook service is ready."
+              break
+            fi
+            echo "⏳ Still waiting... ($i/30)"
+            sleep 10
+          done
+
+          if [ "$ENDPOINTS" -eq 0 ]; then
+            echo "❌ Webhook service is not ready after 5 minutes."
+            exit 1
+          fi
+
+      - name: ⚙️ Terraform Init
         run: terraform init
 
-      - name:  Terraform Validate
+      - name: ✅ Terraform Validate
         run: terraform validate
 
-      - name:  Terraform Plan
+      - name: 📊 Terraform Plan
         run: terraform plan -out=plan.out
 
-      - name:  Terraform Apply
+      - name: 🚀 Terraform Apply
         run: terraform apply -auto-approve plan.out
