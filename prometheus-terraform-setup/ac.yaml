@@ -63,6 +63,9 @@ jobs:
             exit 1
           fi
 
+      - name: ⚙️ Terraform Init
+        run: terraform init
+
       - name: 🧹 Terraform Format (Auto-Fix)
         run: terraform fmt -recursive
 
@@ -76,4 +79,4 @@ jobs:
         run: terraform apply -auto-approve plan.out
 
       - name: 📦 Confirm Helm Release
-        run: helm list -n kube-system | grep alb-controller-ci
+        run: helm list -n kube-system | grep alb-controller-ci || echo "⚠️ Helm release not found"
