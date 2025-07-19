@@ -42,10 +42,13 @@ jobs:
           aws eks update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }}
           kubectl get ns
 
+      - name: 💤 Initial Wait (Give Helm time)
+        run: sleep 60
+
       - name: ⏳ Wait for AWS Load Balancer Webhook to Be Ready
         run: |
           echo "Waiting for webhook service to be created and ready..."
-          for i in {1..30}; do
+          for i in {1..60}; do  # ⏰ Extend to 10 minutes
             EXISTS=$(kubectl get svc aws-load-balancer-webhook-service -n kube-system --ignore-not-found)
             if [ -n "$EXISTS" ]; then
               ENDPOINTS=$(kubectl get endpoints aws-load-balancer-webhook-service -n kube-system -o json | jq '.subsets | length')
@@ -54,12 +57,13 @@ jobs:
                 break
               fi
             fi
-            echo "⏳ Still waiting... ($i/30)"
+            echo "⏳ Still waiting... ($i/60)"
             sleep 10
           done
 
           if [ -z "$ENDPOINTS" ] || [ "$ENDPOINTS" -eq 0 ] 2>/dev/null; then
-            echo "❌ Webhook service is not ready after 5 minutes."
+            echo "❌ Webhook service is not ready after 10 minutes."
+            kubectl get pods -n kube-system | grep alb || echo "🔍 No controller pods running"
             exit 1
           fi
 
@@ -79,4 +83,4 @@ jobs:
         run: terraform apply -auto-approve plan.out
 
       - name: 📦 Confirm Helm Release
-        run: helm list -n kube-system | grep alb-controller-ci || echo "⚠️ Helm release not found"
+        run: helm list -n kube-system | grep aws-load-balancer-controller-ci || echo "⚠️ Helm release not found"
