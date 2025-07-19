@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   terraform:
-    name: Terraform Apply for Monitoring
+    name: Terraform ALB Controller Deploy
     runs-on: arc-rs-nonprod
 
     env:
@@ -28,44 +28,8 @@ jobs:
       - name: 🔧 Set Up Terraform
         uses: hashicorp/setup-terraform@v2
 
-      - name: 🛠️ Check AWS CLI Version
-        run: aws --version
-
-      - name: 🔍 Verify AWS Identity
-        run: aws sts get-caller-identity
-
-      - name: 🔑 Test EKS Token Retrieval
-        run: aws eks get-token --cluster-name ${{ secrets.EKS_CLUSTER_NAME }}
-
-      - name: 🌐 Validate Kubernetes API Access
-        run: |
-          aws eks update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }}
-          kubectl get ns
-
-      - name: 💤 Initial Wait (Give Helm time)
-        run: sleep 60
-
-      - name: ⏳ Wait for AWS Load Balancer Webhook to Be Ready
-        run: |
-          echo "Waiting for webhook service to be created and ready..."
-          for i in {1..60}; do  # ⏰ Extend to 10 minutes
-            EXISTS=$(kubectl get svc aws-load-balancer-webhook-service -n kube-system --ignore-not-found)
-            if [ -n "$EXISTS" ]; then
-              ENDPOINTS=$(kubectl get endpoints aws-load-balancer-webhook-service -n kube-system -o json | jq '.subsets | length')
-              if [ "$ENDPOINTS" -gt 0 ] 2>/dev/null; then
-                echo "✅ Webhook service is ready."
-                break
-              fi
-            fi
-            echo "⏳ Still waiting... ($i/60)"
-            sleep 10
-          done
-
-          if [ -z "$ENDPOINTS" ] || [ "$ENDPOINTS" -eq 0 ] 2>/dev/null; then
-            echo "❌ Webhook service is not ready after 10 minutes."
-            kubectl get pods -n kube-system | grep alb || echo "🔍 No controller pods running"
-            exit 1
-          fi
+      - name: 🌐 Configure Kubeconfig
+        run: aws eks update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }}
 
       - name: ⚙️ Terraform Init
         run: terraform init
@@ -81,6 +45,14 @@ jobs:
 
       - name: 🚀 Terraform Apply
         run: terraform apply -auto-approve plan.out
+
+      - name: 💤 Wait Before Pod Check
+        run: sleep 60
+
+      - name: ✅ Confirm ALB Controller Pod Readiness
+        run: |
+          echo "Waiting for ALB Controller pod to be ready..."
+          kubectl wait pod -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller --for=condition=Ready --timeout=600s
 
       - name: 📦 Confirm Helm Release
         run: helm list -n kube-system | grep aws-load-balancer-controller-ci || echo "⚠️ Helm release not found"
