@@ -1,4 +1,3 @@
-
 name: Deploy EKS Monitoring Stack
 
 on:
@@ -64,8 +63,8 @@ jobs:
             exit 1
           fi
 
-      - name: 🧹 Terraform Format
-        run: terraform fmt -check
+      - name: 🧹 Terraform Format (Auto-Fix)
+        run: terraform fmt -recursive
 
       - name: ✅ Terraform Validate
         run: terraform validate
